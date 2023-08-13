@@ -1,0 +1,12 @@
+name: skill
+version: '${project.version}'
+main: com.github.kumo0621.skill.Skill
+api-version: '1.20'
+commands:
+  skill:
+    permission: default
+permissions:
+  op:
+    default: op
+  default:
+    default: true
