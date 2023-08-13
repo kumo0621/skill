@@ -36,7 +36,7 @@ public final class Skill extends JavaPlugin implements Listener {
         // 設定ファイルの読み込み
         saveDefaultConfig(); // デフォルトの設定ファイルをコピーする
         config = getConfig();
-        new NightVisionReapplyTask().runTaskTimer(this, 0, 20 * 60); // 60秒ごとに実行
+        new NightVisionReapplyTask().runTaskTimer(this, 0, 20 * 3); // 3秒ごとに実行
     }
 
 
@@ -69,7 +69,7 @@ public final class Skill extends JavaPlugin implements Listener {
         if (command.getName().equals("skill")) {
             if (sender instanceof Player) {
                 if (args.length == 0) {
-                openMenu(Objects.requireNonNull(((Player) sender).getPlayer()));
+                    openMenu(Objects.requireNonNull(((Player) sender).getPlayer()));
                 }
             }
         }
@@ -127,28 +127,45 @@ public final class Skill extends JavaPlugin implements Listener {
             if (meta != null && meta.getCustomModelData() == 1001) {
                 if (clickedItem.getType() == Material.DIRT) {
                     boolean hasAnsi = config.getBoolean("players." + playerUUID + ".ansi", false);
-                    if(hasAnsi) {
-                        config.set("players." + playerUUID + ".ansi", true);
-                        minedStoneCount --;
-                        config.set("players." + player.getUniqueId() + ".points", minedStoneCount);
-                        openMenu(player);
-                    } else {
-                        player.sendMessage("すでに取得してます。");
+                    if (minedStoneCount!=0) {
+                        if (!hasAnsi) {
+                            config.set("players." + playerUUID + ".ansi", true);
+                            minedStoneCount--;
+                            config.set("players." + player.getUniqueId() + ".points", minedStoneCount);
+                            openMenu(player);
+                            player.sendMessage("暗視を開放した！！");
+                            saveConfig();
+                        } else {
+                            player.sendMessage("すでに取得してます。");
+                        }
+                    }else {
+                        player.sendMessage("ポイントが足りません。");
                     }
                 }
             }
         }
     }
+
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+        UUID playerUUID = player.getUniqueId();
+        boolean hasAnsi = config.getBoolean("players." + playerUUID + ".ansi", false);
+        config.set("players." + playerUUID + ".ansi", hasAnsi); // コンフィグに書き込む
+        saveConfig(); // コンフィグを保存
+    }
+
     private void applyNightVisionEffect(Player player) {
         // 設定ファイルを読み込む（config.ymlなど）
         FileConfiguration config = getConfig();
         UUID playerUUID = player.getUniqueId();
         boolean hasAnsi = config.getBoolean("players." + playerUUID + ".ansi", false);
         if (hasAnsi) {
-            PotionEffect nightVisionEffect = new PotionEffect(PotionEffectType.NIGHT_VISION, 20 * 60, 0, true, false);
+            PotionEffect nightVisionEffect = new PotionEffect(PotionEffectType.NIGHT_VISION, 20 * 80, 0, true, false);
             player.addPotionEffect(nightVisionEffect);
         }
     }
+
     private class NightVisionReapplyTask extends BukkitRunnable {
         @Override
         public void run() {
