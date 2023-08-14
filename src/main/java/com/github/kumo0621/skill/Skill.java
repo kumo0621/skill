@@ -1,7 +1,10 @@
 package com.github.kumo0621.skill;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -53,7 +56,7 @@ public final class Skill extends JavaPlugin implements Listener {
             minedStoneCount++;
             config.set("players." + player.getUniqueId() + ".minedStoneCount", minedStoneCount);
 
-            if (minedStoneCount % 10 == 0) {
+            if (minedStoneCount % 50000 == 0) {
                 int points = config.getInt("players." + player.getUniqueId() + ".points", 0);
                 points++;
                 config.set("players." + player.getUniqueId() + ".points", points);
@@ -96,14 +99,20 @@ public final class Skill extends JavaPlugin implements Listener {
         ItemStack item1 = createBasicItem(Material.CONDUIT, "残りのポイント: " + points, "", 1001);
         menu.setItem(0, item1);
 
-        ItemStack item2 = createBasicItem(Material.DIRT, "常時暗視をつける 1PT", "", 1001);
+        ItemStack item2 = createBasicItem(Material.COBBLESTONE, "常時暗視をつける 1PT", "", 1001);
         menu.setItem(1, item2);
 
-        ItemStack item3 = createBasicItem(Material.OAK_LOG, "オノ強化メニュー", "", 1001);
+        ItemStack item3 = createBasicItem(Material.STONE_PICKAXE, "採掘速度のレベルを上げる。", "", 1001);
         menu.setItem(2, item3);
 
-        ItemStack item4 = createBasicItem(Material.ANVIL, "雑貨メニュー", "", 1001);
+        ItemStack item4 = createBasicItem(Material.BONE, "移動速度のレベルを上げる。", "", 1001);
         menu.setItem(3, item4);
+
+        ItemStack item5 = createBasicItem(Material.RABBIT_FOOT, "ジャンプのレベルを上げる。", "", 1001);
+        menu.setItem(4, item5);
+
+        ItemStack item6 = createBasicItem(Material.BEDROCK, "範囲採掘のレベルを上げる。", "", 1001);
+        menu.setItem(5, item6);
         // メニュー表示
         player.openInventory(menu);
     }
@@ -127,32 +136,104 @@ public final class Skill extends JavaPlugin implements Listener {
             if (meta != null && meta.getCustomModelData() == 1001) {
                 if (clickedItem.getType() == Material.DIRT) {
                     boolean hasAnsi = config.getBoolean("players." + playerUUID + ".ansi", false);
-                    if (minedStoneCount!=0) {
+                    if (minedStoneCount != 0) {
                         if (!hasAnsi) {
                             config.set("players." + playerUUID + ".ansi", true);
                             minedStoneCount--;
                             config.set("players." + player.getUniqueId() + ".points", minedStoneCount);
                             openMenu(player);
                             player.sendMessage("暗視を開放した！！");
-                            saveConfig();
                         } else {
                             player.sendMessage("すでに取得してます。");
                         }
-                    }else {
+                    } else {
+                        player.sendMessage("ポイントが足りません。");
+                    }
+                } else if (clickedItem.getType() == Material.STONE_PICKAXE) {
+                    int hasAnsi = config.getInt("players." + playerUUID + ".saikutu", 0);
+                    if (minedStoneCount != 0) {
+                        if (hasAnsi >= 10) {
+                            player.sendMessage("これ以上あげれません。");
+                        } else {
+                            minedStoneCount--;
+                            hasAnsi++;
+                            config.set("players." + playerUUID + ".saikutu", hasAnsi);
+                            config.set("players." + player.getUniqueId() + ".points", minedStoneCount);
+                            openMenu(player);
+                            player.sendMessage("採掘のレベルを上げた！！現在" + hasAnsi);
+                        }
+                    } else {
+                        player.sendMessage("ポイントが足りません。");
+                    }
+                } else if (clickedItem.getType() == Material.BONE) {
+                    int hasAnsi = config.getInt("players." + playerUUID + ".speed", 0);
+                    if (minedStoneCount != 0) {
+                        if (hasAnsi >= 10) {
+                            player.sendMessage("これ以上あげれません。");
+                        } else {
+                            minedStoneCount--;
+                            hasAnsi++;
+                            config.set("players." + playerUUID + ".speed", hasAnsi);
+                            config.set("players." + player.getUniqueId() + ".points", minedStoneCount);
+                            openMenu(player);
+                            player.sendMessage("移動速度のレベルを上げた！！現在" + hasAnsi);
+                        }
+                    } else {
+                        player.sendMessage("ポイントが足りません。");
+                    }
+                } else if (clickedItem.getType() == Material.RABBIT_FOOT) {
+                    int hasAnsi = config.getInt("players." + playerUUID + ".junp", 0);
+                    if (minedStoneCount != 0) {
+                        if (hasAnsi >= 10) {
+                            player.sendMessage("これ以上あげれません。");
+                        } else {
+                            minedStoneCount--;
+                            hasAnsi++;
+                            config.set("players." + playerUUID + ".junp", hasAnsi);
+                            config.set("players." + player.getUniqueId() + ".points", minedStoneCount);
+                            openMenu(player);
+                            player.sendMessage("移動速度のレベルを上げた！！現在" + hasAnsi);
+                        }
+                    } else {
+                        player.sendMessage("ポイントが足りません。");
+                    }
+                } else if (clickedItem.getType() == Material.BEDROCK) {
+                    int hasAnsi = config.getInt("players." + playerUUID + ".mine", 0);
+                    if (minedStoneCount >= 5) {
+                        if (hasAnsi >= 20) {
+                            player.sendMessage("これ以上あげれません。");
+                        } else {
+                            minedStoneCount -= 5;
+                            hasAnsi += 5;
+                            config.set("players." + playerUUID + ".mine", hasAnsi);
+                            config.set("players." + player.getUniqueId() + ".points", minedStoneCount);
+                            openMenu(player);
+                            player.sendMessage("範囲採掘のレベルを上げた！！現在" + hasAnsi);
+                        }
+                    } else {
                         player.sendMessage("ポイントが足りません。");
                     }
                 }
             }
         }
+        saveConfig();
     }
 
     @EventHandler
-    public void onPlayerJoin(PlayerJoinEvent event) {
+    public void DestroyBlockEvent(BlockBreakEvent event) {
         Player player = event.getPlayer();
         UUID playerUUID = player.getUniqueId();
-        boolean hasAnsi = config.getBoolean("players." + playerUUID + ".ansi", false);
-        config.set("players." + playerUUID + ".ansi", hasAnsi); // コンフィグに書き込む
-        saveConfig(); // コンフィグを保存
+        Location location = event.getBlock().getLocation();
+        int mine = config.getInt("players." + playerUUID + ".mine", 0);
+        if (mine == 5) {
+            mine2x2(player, location);
+        } else if (mine == 10) {
+            mine3x3(player, location);
+        } else if (mine == 15) {
+            mine5x5(player, location);
+        } else if (mine == 20) {
+            mine10x10(player, location);
+        }
     }
 
     private void applyNightVisionEffect(Player player) {
@@ -164,7 +245,14 @@ public final class Skill extends JavaPlugin implements Listener {
             PotionEffect nightVisionEffect = new PotionEffect(PotionEffectType.NIGHT_VISION, 20 * 80, 0, true, false);
             player.addPotionEffect(nightVisionEffect);
         }
+        int saikutu = config.getInt("players." + playerUUID + ".saikutu", -1);
+        PotionEffect nightVisionEffect = new PotionEffect(PotionEffectType.FAST_DIGGING, 20 * 80, saikutu, true, false);
+        player.addPotionEffect(nightVisionEffect);
+        int jump = config.getInt("players." + playerUUID + ".junp", -1);
+        PotionEffect nightVisionEffect2 = new PotionEffect(PotionEffectType.JUMP, 20 * 80, jump, true, false);
+        player.addPotionEffect(nightVisionEffect2);
     }
+
 
     private class NightVisionReapplyTask extends BukkitRunnable {
         @Override
@@ -173,5 +261,41 @@ public final class Skill extends JavaPlugin implements Listener {
                 applyNightVisionEffect(player);
             }
         }
+    }
+
+    public static void mineBlocksInRadius(Player player, Location center, int radius) {
+        World world = center.getWorld();
+        int centerX = center.getBlockX();
+        int centerY = center.getBlockY();
+        int centerZ = center.getBlockZ();
+
+        for (int x = centerX - radius; x <= centerX + radius; x++) {
+            for (int y = centerY - radius; y <= centerY + radius; y++) {
+                for (int z = centerZ - radius; z <= centerZ + radius; z++) {
+                    Block block = world.getBlockAt(x, y, z);
+                    Material blockType = block.getType();
+
+                    // 鉱石や石を破壊する条件を追加
+                    if (blockType == Material.STONE || blockType == Material.DEEPSLATE) {
+                        block.breakNaturally(player.getInventory().getItemInMainHand());
+                    }
+                }
+            }
+        }
+    }
+    public static void mine2x2(Player player, Location center) {
+        mineBlocksInRadius(player, center, 1);
+    }
+
+    public static void mine3x3(Player player, Location center) {
+        mineBlocksInRadius(player, center, 2);
+    }
+
+    public static void mine5x5(Player player, Location center) {
+        mineBlocksInRadius(player, center, 3);
+    }
+
+    public static void mine10x10(Player player, Location center) {
+        mineBlocksInRadius(player, center, 4);
     }
 }
