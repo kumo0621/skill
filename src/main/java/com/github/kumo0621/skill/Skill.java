@@ -1,5 +1,6 @@
 package com.github.kumo0621.skill;
 
+import jdk.javadoc.internal.doclint.HtmlTag;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -13,7 +14,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -23,8 +23,6 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -51,7 +49,7 @@ public final class Skill extends JavaPlugin implements Listener {
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {
         Player player = event.getPlayer();
-        if (event.getBlock().getType().equals(Material.STONE)) {
+        if (event.getBlock().getType().equals(Material.STONE) ||event.getBlock().getType().equals(Material.DEEPSLATE)) {
             int minedStoneCount = config.getInt("players." + player.getUniqueId() + ".minedStoneCount", 0);
             minedStoneCount++;
             config.set("players." + player.getUniqueId() + ".minedStoneCount", minedStoneCount);
@@ -113,6 +111,9 @@ public final class Skill extends JavaPlugin implements Listener {
 
         ItemStack item6 = createBasicItem(Material.BEDROCK, "範囲採掘のレベルを上げる。", "", 1001);
         menu.setItem(5, item6);
+
+        ItemStack item7 = createBasicItem(Material.WATER, "常時水中呼吸をつける", "", 1001);
+        menu.setItem(6, item7);
         // メニュー表示
         player.openInventory(menu);
     }
@@ -143,6 +144,21 @@ public final class Skill extends JavaPlugin implements Listener {
                             config.set("players." + player.getUniqueId() + ".points", minedStoneCount);
                             openMenu(player);
                             player.sendMessage("暗視を開放した！！");
+                        } else {
+                            player.sendMessage("すでに取得してます。");
+                        }
+                    } else {
+                        player.sendMessage("ポイントが足りません。");
+                    }
+                } else if (clickedItem.getType() == Material.DIRT) {
+                    boolean hasAnsi = config.getBoolean("players." + playerUUID + ".suityuu", false);
+                    if (minedStoneCount != 0) {
+                        if (!hasAnsi) {
+                            config.set("players." + playerUUID + ".suityuu", true);
+                            minedStoneCount--;
+                            config.set("players." + player.getUniqueId() + ".points", minedStoneCount);
+                            openMenu(player);
+                            player.sendMessage("水中呼吸を開放した！！");
                         } else {
                             player.sendMessage("すでに取得してます。");
                         }
@@ -200,7 +216,7 @@ public final class Skill extends JavaPlugin implements Listener {
                 } else if (clickedItem.getType() == Material.BEDROCK) {
                     int hasAnsi = config.getInt("players." + playerUUID + ".mine", 0);
                     if (minedStoneCount >= 5) {
-                        if (hasAnsi >= 20) {
+                        if (hasAnsi >= 15) {
                             player.sendMessage("これ以上あげれません。");
                         } else {
                             minedStoneCount -= 5;
@@ -224,15 +240,17 @@ public final class Skill extends JavaPlugin implements Listener {
         Player player = event.getPlayer();
         UUID playerUUID = player.getUniqueId();
         Location location = event.getBlock().getLocation();
+        Material blockType = event.getBlock().getType();
         int mine = config.getInt("players." + playerUUID + ".mine", 0);
-        if (mine == 5) {
-            mine2x2(player, location);
-        } else if (mine == 10) {
-            mine3x3(player, location);
-        } else if (mine == 15) {
-            mine5x5(player, location);
-        } else if (mine == 20) {
-            mine10x10(player, location);
+        if (blockType == Material.STONE || blockType == Material.DEEPSLATE) {
+
+            if (mine == 5) {
+                mine2x2(player, location);
+            } else if (mine == 10) {
+                mine3x3(player, location);
+            } else if (mine == 15) {
+                mine5x5(player, location);
+            }
         }
     }
 
@@ -241,8 +259,13 @@ public final class Skill extends JavaPlugin implements Listener {
         FileConfiguration config = getConfig();
         UUID playerUUID = player.getUniqueId();
         boolean hasAnsi = config.getBoolean("players." + playerUUID + ".ansi", false);
+        boolean suityuu = config.getBoolean("players." + playerUUID + ".suityuu", false);
         if (hasAnsi) {
             PotionEffect nightVisionEffect = new PotionEffect(PotionEffectType.NIGHT_VISION, 20 * 80, 0, true, false);
+            player.addPotionEffect(nightVisionEffect);
+        }
+        if (suityuu) {
+            PotionEffect nightVisionEffect = new PotionEffect(PotionEffectType.WATER_BREATHING, 20 * 80, 255, true, false);
             player.addPotionEffect(nightVisionEffect);
         }
         int saikutu = config.getInt("players." + playerUUID + ".saikutu", -1);
@@ -283,6 +306,7 @@ public final class Skill extends JavaPlugin implements Listener {
             }
         }
     }
+
     public static void mine2x2(Player player, Location center) {
         mineBlocksInRadius(player, center, 1);
     }
@@ -293,9 +317,5 @@ public final class Skill extends JavaPlugin implements Listener {
 
     public static void mine5x5(Player player, Location center) {
         mineBlocksInRadius(player, center, 3);
-    }
-
-    public static void mine10x10(Player player, Location center) {
-        mineBlocksInRadius(player, center, 4);
     }
 }
